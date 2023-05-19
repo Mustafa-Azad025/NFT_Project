@@ -1,4 +1,12 @@
 const NFT = require("../models/nft");
+const ipfsClient = require("ipfs-http-client");
+
+// Create IPFS client
+const ipfs = ipfsClient({
+	host: process.env.IPFS_NODE_HOST || "ipfs.infura.io",
+	port: process.env.IPFS_NODE_PORT || 5001,
+	protocol: process.env.IPFS_NODE_PROTOCOL || "https",
+});
 
 // Get a list of all NFTs
 export const getAllNFT = async (req, res) => {
@@ -28,14 +36,17 @@ export const getNFTById = async (req, res) => {
 };
 
 // Create a new NFT
-export const createNFT = async (req, res) => {
+exports.createNFT = async (req, res) => {
 	const { name, description, image } = req.body;
 
 	try {
+		// Add the image to IPFS and get the CID
+		const imageCID = await addFileToIPFS(image);
+
 		const nft = new NFT({
 			name,
 			description,
-			image,
+			image: imageCID,
 			owner: req.user._id,
 		});
 		await nft.save();
@@ -44,6 +55,14 @@ export const createNFT = async (req, res) => {
 		console.error(error);
 		res.status(500).json({ error: "Server Error" });
 	}
+};
+
+// Helper function to add file to IPFS
+const addFileToIPFS = async (file) => {
+	const fileData = Buffer.from(file.data, "base64");
+	const ipfsResponse = await ipfs.add(fileData);
+	const fileCID = ipfsResponse.cid.toString();
+	return fileCID;
 };
 
 // Update an existing NFT
