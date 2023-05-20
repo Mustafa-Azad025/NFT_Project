@@ -36,7 +36,7 @@ export const getNFTById = async (req, res) => {
 };
 
 // Create a new NFT
-exports.createNFT = async (req, res) => {
+export const createNFT = async (req, res) => {
 	const { name, description, image } = req.body;
 
 	try {
